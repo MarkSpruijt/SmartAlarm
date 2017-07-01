@@ -4,6 +4,7 @@
 #include "Countdown.h"
 #include "Speaker.h"
 #include "Clock.h"
+#include "Alarm.h"
 //#include "WIFI.h"
 
 //WIFI esp;
@@ -12,13 +13,15 @@ Display screen(4,1,0,5,6,7,8, 10,11,12,13);
 //Countdown CD(screen);
 Speaker speaker(A0);
 Clock klok(12,00);
+Alarm alarm(11,00);
 
 bool alarmtiggered = false;
-bool alarmon = true;
-int alarmtime = 1201;
+bool alarmon = false;
+int alarmtime = 1200;
 unsigned long alarmMillis = millis();
 unsigned long buttonpressed = millis();
 unsigned long analogread = millis();
+bool alarmstate = false;
 
 
 void setup() {
@@ -38,25 +41,48 @@ void loop() {
   
   redled.Update();
   //CD.Update();
-  klok.Update();
-  screen.number = klok.number;
   
-  if(digitalRead(A5) == HIGH && millis() - buttonpressed > 1000){
-    alarmtime = klok.number + 1;
+
+  
+  if(digitalRead(A5) == HIGH && millis() - buttonpressed > 1000 && alarmstate == false){
+    if(alarmon){
+      alarmon = false;
+    } else {
+      alarmstate = true;
+      alarmtime = 600;
+      
+    }
+    buttonpressed = millis();
+  }
+  if(digitalRead(A5) == HIGH && millis() - buttonpressed > 1000 && alarmstate == true){
+    alarmstate = false;
+    alarmtime = alarm.number;
     alarmon = true;
     buttonpressed = millis();
   }
   
-  /*
+  klok.Update(!alarmstate);
+  
+  if(alarmstate){
+    alarm.Update();
+    screen.number = alarm.number;
+  } else {
+    screen.number = klok.number;
+  }
+  
+    /*
    * Check Alarm
    */
   if(alarmon == true){
     redled.state = 2;
-  } else if(alarmon == false && alarmtiggered == true){
+  } else if(alarmstate == true){
     redled.state = 1;
   } else {
     redled.state = 0;
   }
+  
+  
+  
   if(klok.number == alarmtime && alarmon == true && alarmtiggered == false){
     speaker.alarmOn();
     alarmtiggered = true;
